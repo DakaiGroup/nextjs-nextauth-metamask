@@ -1,0 +1,59 @@
+import axios from "axios";
+import { ethers } from "ethers";
+import { signIn } from "next-auth/react";
+
+// Fix typescript errors for window.ethereum
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
+
+export default function Auth() {
+  return (
+    <main>
+      <p>
+        After clicking the button you will be prompted to connect your wallet
+        with this site, then you will need to sign a nonce (random hex string)
+        to prove you own the account.
+      </p>
+      <button onClick={onSignInWithCrypto}>Sign in with Metamask</button>
+    </main>
+  );
+}
+
+// This function requests a nonce then signs it, proving that
+//  the user owns the public address they are using
+async function onSignInWithCrypto() {
+  try {
+    if (!window.ethereum) {
+      window.alert("Please install MetaMask first.");
+      return;
+    }
+
+    // Get the wallet provider, the signer and address
+    //  see: https://docs.ethers.org/v6/getting-started/#starting-signing
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const address = await signer.getAddress();
+
+    // Send the public address to generate a nonce associates with our account
+    const response = await axios.post("/api/auth/crypto/generateNonce", {
+      publicAddress: address,
+    });
+
+    console.log(response.data);
+
+    // Sign the received nonce
+    const signature = await signer.signMessage(response.data.nonce);
+
+    // Use NextAuth to sign in with our address and the nonce
+    await signIn("crypto", {
+      publicAddress: address,
+      signature: signature,
+      callbackUrl: "/",
+    });
+  } catch {
+    window.alert("Error with signing, please try again.");
+  }
+}

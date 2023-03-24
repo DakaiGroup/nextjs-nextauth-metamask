@@ -46,7 +46,7 @@ model User {
   email            String?           @unique
   emailVerified    DateTime?
   image            String?
-  publicAddress    String?           @unique // Added to enable metamask authentication
+  publicAddress    String?           @unique // Added to enable crypto authentication
   accounts         Account[]
   sessions         Session[]
   cryptoLoginNonce CryptoLoginNonce?
@@ -60,7 +60,7 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// Added for metamask authentication
+// Added for crypto authentication
 
 model CryptoLoginNonce {
   userId  String   @unique
