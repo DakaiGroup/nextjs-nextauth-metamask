@@ -23,6 +23,7 @@ This example stores the generated nonce in a database with the user data. To use
 git clone https://github.com/DakaiGroup/nextjs-nextauth-metamask.git
 cd nextjs-nextauth-metamask
 yarn
+yarn prisma migrate dev
 yarn dev
 ```
 
@@ -59,6 +60,12 @@ We need to extend this schema to support crypto wallet based login. We need to s
 
 See the completed schema in [prisma/schema.prisma](prisma/schema.prisma).
 
+To update the database with the schema run:
+
+```bash
+yarn prisma migrate dev
+```
+
 ### Data flow
 
 For easier understanding of the following sections here is a data flow diagram:
@@ -77,8 +84,8 @@ sequenceDiagram
   B ->> D : Create or update user identified by the public address<br/>Generate nonce and connect it to the user
   B ->> F : 200 <<nonce, expiry>>
   F ->> W : Sign <<nonce>>
-  W ->> F : <<signed_nonce>>
-  F ->> B : call signIn from next-auth/react with <<publicAddress, signed_nonce>>
+  W ->> F : <<signedNonce>>
+  F ->> B : call signIn from next-auth/react with <<publicAddress, signedNonce>>
   B ->> D : Fetch user and saved nonce
   B ->> B : Verify signature, expiry and address
   B ->> F : Upon success, NextAuth creates and handles the session
@@ -96,9 +103,9 @@ export default async function generateNonce(
   res: NextApiResponse
 ) {
   const { publicAddress } = req.body;
-  
+
   const nonce = crypto.randomBytes(32).toString("hex");
-  
+
   // Set the expiry of the nonce to 1 hour
   const expires = new Date(new Date().getTime() + 1000 * 60 * 60);
 
@@ -142,6 +149,7 @@ The full implementation of this endpoint with explanatory comments is at [pages/
 Other than that we need to configure NextAuth to accept our custom authentication method. We need to create [[...nextauth].ts](/pages/api/auth/[...nextauth].ts) in `/pages/api/auth`. The configuration options are available in the NextAuth [documentation](https://next-auth.js.org/configuration/options).
 
 We need to add a custom provider, let's call it `crypto` with the following parameters:
+
 ```typescript
 CredentialsProvider({
   id: "crypto",
@@ -296,7 +304,7 @@ async function onSignInWithCrypto() {
 }
 ```
 
-Here we have a button that initiates the sign-in flow. Upon clicking the button `onSignInWithCrypto` is called that is responsible for handling the flow described in the [Data Flow](#data-flow) section. It first connects to the user's wallet, then sends a request to `generateNonce` with the public address of the connected account. `generateNonce` replies with the generated nonce that is then signed with the wallet and sent back through `NextAuth`'s `signIn` function. 
+Here we have a button that initiates the sign-in flow. Upon clicking the button `onSignInWithCrypto` is called that is responsible for handling the flow described in the [Data Flow](#data-flow) section. It first connects to the user's wallet, then sends a request to `generateNonce` with the public address of the connected account. `generateNonce` replies with the generated nonce that is then signed with the wallet and sent back through `NextAuth`'s `signIn` function.
 
 ### Summary
 

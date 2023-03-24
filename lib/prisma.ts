@@ -6,6 +6,7 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
+// This is required so that Prisma doesn't crash with NextJS hot reloads
 export const prisma =
   global.prisma || new PrismaClient({ log: ["error", "warn"] });
 
