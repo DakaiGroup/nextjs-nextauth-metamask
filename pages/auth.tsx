@@ -1,4 +1,3 @@
-import axios from "axios";
 import { ethers } from "ethers";
 import { signIn } from "next-auth/react";
 
@@ -38,14 +37,19 @@ async function onSignInWithCrypto() {
     const address = await signer.getAddress();
 
     // Send the public address to generate a nonce associates with our account
-    const response = await axios.post("/api/auth/crypto/generateNonce", {
-      publicAddress: address,
+    const response = await fetch("/api/auth/crypto/generateNonce", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        publicAddress: address,
+      }),
     });
-
-    console.log(response.data);
+    const responseData = await response.json();
 
     // Sign the received nonce
-    const signature = await signer.signMessage(response.data.nonce);
+    const signature = await signer.signMessage(responseData.nonce);
 
     // Use NextAuth to sign in with our address and the nonce
     await signIn("crypto", {

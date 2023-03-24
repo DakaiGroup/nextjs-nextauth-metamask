@@ -45,12 +45,15 @@ async function authorizeCrypto(
   };
 }
 
+// see: https://next-auth.js.org/configuration/options
 export const authOptions: AuthOptions = {
+  // Setting error and signin pages to our /auth custom page
   pages: {
     signIn: "/auth",
     error: "/auth",
   },
   providers: [
+    // see: https://next-auth.js.org/configuration/providers/credentials
     CredentialsProvider({
       id: "crypto",
       name: "Crypto Wallet Auth",
@@ -61,15 +64,9 @@ export const authOptions: AuthOptions = {
       authorize: authorizeCrypto,
     }),
   ],
-  callbacks: {
-    // Add publicAddress to session object
-    async session({ session, token }: any) {
-      const u = await prisma.user.findUnique({ where: { id: token.sub } });
-      session.publicAddress = u?.publicAddress;
-      return session;
-    },
-  },
   adapter: PrismaAdapter(prisma),
+  // Due to a NextAuth bug, the default database strategy is no usable
+  //  with CredentialsProvider, so we need to set strategy to JWT
   session: {
     strategy: "jwt",
   },
