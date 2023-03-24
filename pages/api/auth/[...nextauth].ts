@@ -8,12 +8,12 @@ import CredentialsProvider from "next-auth/providers/credentials";
 //  takes publicAdress and signature from credentials and returns
 //  either a user object on success or null on failure
 async function authorizeCrypto(
-  credentials: Record<"publicAddress" | "signature", string> | undefined,
+  credentials: Record<"publicAddress" | "signedNonce", string> | undefined,
   req: Pick<RequestInternal, "body" | "headers" | "method" | "query">
 ) {
   if (!credentials) return null;
 
-  const { publicAddress, signature } = credentials;
+  const { publicAddress, signedNonce } = credentials;
 
   // Get user from database with their generated nonce
   const user = await prisma.user.findUnique({
@@ -26,7 +26,7 @@ async function authorizeCrypto(
   // Compute the signer address from the saved nonce and the received signature
   const signerAddress = ethers.verifyMessage(
     user.cryptoLoginNonce.nonce,
-    signature
+    signedNonce
   );
 
   // Check that the signer address matches the public address
@@ -59,7 +59,7 @@ export const authOptions: AuthOptions = {
       name: "Crypto Wallet Auth",
       credentials: {
         publicAddress: { label: "Public Address", type: "text" },
-        signature: { label: "Signature", type: "text" },
+        signedNonce: { label: "Signed Nonce", type: "text" },
       },
       authorize: authorizeCrypto,
     }),

@@ -34,7 +34,7 @@ async function onSignInWithCrypto() {
     //  see: https://docs.ethers.org/v6/getting-started/#starting-signing
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
-    const address = await signer.getAddress();
+    const publicAddress = await signer.getAddress();
 
     // Send the public address to generate a nonce associates with our account
     const response = await fetch("/api/auth/crypto/generateNonce", {
@@ -43,18 +43,18 @@ async function onSignInWithCrypto() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        publicAddress: address,
+        publicAddress,
       }),
     });
     const responseData = await response.json();
 
     // Sign the received nonce
-    const signature = await signer.signMessage(responseData.nonce);
+    const signedNonce = await signer.signMessage(responseData.nonce);
 
     // Use NextAuth to sign in with our address and the nonce
     await signIn("crypto", {
-      publicAddress: address,
-      signature: signature,
+      publicAddress,
+      signedNonce,
       callbackUrl: "/",
     });
   } catch {
